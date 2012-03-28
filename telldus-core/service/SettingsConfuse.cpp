@@ -409,6 +409,8 @@ bool readConfig(cfg_t **cfg) {
 		CFG_STR(const_cast<char *>("ignoreControllerConfirmation"), const_cast<char *>("false"), CFGF_NONE),
 		CFG_SEC(const_cast<char *>("device"), device_opts, CFGF_MULTI),
 		CFG_SEC(const_cast<char *>("controller"), controller_opts, CFGF_MULTI),
+		CFG_STR(const_cast<char *>("eventSocket"), const_cast<char *>("/tmp/TelldusEvents"), CFGF_NONE),
+		CFG_STR(const_cast<char *>("clientSocket"), const_cast<char *>("/tmp/TelldusClient"), CFGF_NONE),
 		CFG_END()
 	};
 

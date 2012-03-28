@@ -7,6 +7,7 @@
 #include "ControllerListener.h"
 #include "EventUpdateManager.h"
 #include "Timer.h"
+#include "Settings.h"
 #include "Log.h"
 
 #include <stdio.h>
@@ -70,7 +71,8 @@ void TelldusMain::start(void) {
 	ControllerManager controllerManager(dataEvent, deviceUpdateEvent);
 	DeviceManager deviceManager(&controllerManager, deviceUpdateEvent);
 
-	ConnectionListener clientListener(L"TelldusClient", clientEvent);
+	Settings set;
+	ConnectionListener clientListener(set.getSetting(L"clientSocket"), clientEvent);
 
 	std::list<ClientCommunicationHandler *> clientCommunicationHandlerList;
 

@@ -4,6 +4,7 @@
 #include "EventHandler.h"
 #include "Message.h"
 #include "Socket.h"
+#include "Settings.h"
 
 #include <list>
 #include <memory>
@@ -25,7 +26,9 @@ EventUpdateManager::EventUpdateManager()
 	d->stopEvent = d->eventHandler.addEvent();
 	d->updateEvent = d->eventHandler.addEvent();
 	d->clientConnectEvent = d->eventHandler.addEvent();
-	d->eventUpdateClientListener = new ConnectionListener(L"TelldusEvents", d->clientConnectEvent);
+
+	Settings set;
+	d->eventUpdateClientListener = new ConnectionListener(set.getSetting(L"eventSocket"), d->clientConnectEvent);
 }
 
 EventUpdateManager::~EventUpdateManager(void) {
