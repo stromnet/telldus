@@ -80,6 +80,9 @@ void ConnectionListener::run(){
 			return;
 		}
 
+		int optval = 1;
+		setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(port);
 		addr.sin_addr.s_addr = inet_addr(hostspec.c_str());
