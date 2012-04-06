@@ -13,6 +13,8 @@ namespace TelldusCore {
 		~Client(void);
 
 		static Client *getInstance();
+		static Client *getInstance(std::wstring client, std::wstring event);
+
 		static void close();
 
 		int registerEvent(CallbackStruct::CallbackType type, void *eventFunction, void *context );
@@ -22,16 +24,16 @@ namespace TelldusCore {
 		int getSensor(char *protocol, int protocolLen, char *model, int modelLen, int *id, int *dataTypes);
 		int getController(int *controllerId, int *controllerType, char *name, int nameLen, int *available);
 
-		static bool getBoolFromService(const Message &msg);
-		static int getIntegerFromService(const Message &msg);
-		static std::wstring getWStringFromService(const Message &msg);
+		bool getBoolFromService(const Message &msg);
+		int getIntegerFromService(const Message &msg);
+		std::wstring getWStringFromService(const Message &msg);
 
 	protected:
 			void run(void);
 
 	private:
-		Client();
-		static std::wstring sendToService(const Message &msg);
+		Client(std::wstring client, std::wstring event);
+		std::wstring sendToService(const Message &msg);
 
 		class PrivateData;
 		PrivateData *d;

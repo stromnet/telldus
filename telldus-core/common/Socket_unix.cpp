@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <math.h>
 
 #define BUFSIZE 512
@@ -47,19 +49,65 @@ Socket::~Socket(void) {
 }
 
 void Socket::connect(const std::wstring &server) {
-	struct sockaddr_un remote;
-	socklen_t len;
+	/* server is either a filesystem path, or a tcp socket.
+	 * If a TCP socket, it should have format tcp://<ip>:<port>
+	 */
+	int isTcp = 0;
+	std::string name = std::string(server.begin(), server.end());
 
-	if ((d->socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-		return;
-	}
-	std::string name = "/tmp/" + std::string(server.begin(), server.end());
-	remote.sun_family = AF_UNIX;
-	strcpy(remote.sun_path, name.c_str());
+	if(name.find("tcp://") == 0) {
+		isTcp = 1;
+		// Extract IP + port from name
+		std::string sockspec(name, 6);
+		size_t colon = sockspec.find(':');
+		if(colon == std::string::npos) {
+			//Log::error("Invalid socket '%s', missing :", name.c_str());
+			return;
+		}
 
-	len = SUN_LEN(&remote);
-	if (connectWrapper(d->socket, (struct sockaddr *)&remote, len) == -1) {
-		return;
+		std::string hostspec(sockspec, 0, colon);
+		std::string portspec(sockspec, colon + 1);
+		int port = (int)strtol(portspec.c_str(), NULL, 10);
+		if(port == 0) {
+			//Log::error("Invalid socket '%s', cannot interpret port number", name.c_str());
+			return;
+		}
+		if(hostspec.length() == 0) {
+			//Log::error("Invalid socket '%s', missing bind IP", name.c_str());
+			return;
+		}
+
+		struct sockaddr_in addr;
+		d->socket = socket(AF_INET, SOCK_STREAM, 0);
+		if (d->socket < 0) {
+			//Log::error("Failed to create TCP socket, error %d (%s)", errno, strerror(errno));
+			return;
+		}
+
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+		addr.sin_addr.s_addr = inet_addr(hostspec.c_str());
+
+		if(connectWrapper(d->socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+			//Log::error("Failed to bind socket '%s', error %d: %s", name.c_str(), errno, strerror(errno));
+			close(d->socket);
+			return;
+		}
+	}else{
+		// Use name as plain filename
+		struct sockaddr_un remote;
+		d->socket = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (d->socket < 0) {
+			return;
+		}
+		remote.sun_family = AF_UNIX;
+		memset(remote.sun_path, '\0', sizeof(remote.sun_path));
+		strncpy(remote.sun_path, name.c_str(), sizeof(remote.sun_path));
+
+		int size = SUN_LEN(&remote);
+		if (connectWrapper(d->socket, (struct sockaddr *)&remote, size) == -1) {
+			return;
+		}
 	}
 
 	TelldusCore::MutexLocker locker(&d->mutex);
@@ -114,7 +162,7 @@ std::wstring Socket::read(int timeout) {
 void Socket::stopReadWait(){
 	TelldusCore::MutexLocker locker(&d->mutex);
 	d->connected = false;
-	//TODO somehow signal the socket here?
+	//TODO somehow signal the socket, if connected, here?
 }
 
 void Socket::write(const std::wstring &msg) {

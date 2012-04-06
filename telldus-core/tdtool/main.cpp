@@ -24,13 +24,24 @@ void print_usage( char *name ) {
 	printf("Usage: %s [ options ]\n", name);
 	printf("\n");
 	printf("Options:\n");
-	printf("         -[bdefhlnrv] [ --list ] [ --help ]\n");
+	printf("         -[bdefhlnrv]");
+#ifndef _WINDOWS
+	printf("	[ --socket sockspec ]");
+#endif
+	printf("\n                      [ --help ] [ --list ]\n");
 	printf("                      [ --list-sensors ] [ --list-devices ]\n");
 	printf("                      [ --on device ] [ --off device ] [ --bell device ]\n");
 	printf("                      [ --learn device ]\n");
 	printf("                      [ --dimlevel level --dim device ]\n");
 	printf("                      [ --raw input ]\n");
 	printf("\n");
+#ifndef _WINDOWS
+	printf("       --socket (-s short option)\n");
+	printf("             Specify the Telldusd client socket to connect to.\n");
+ 	printf("             Default is /tmp/TelldusClient. Should match clientSocket in tellstick.conf\n");
+	printf("             This has to be specified before any other options.\n");
+	printf("\n");
+#endif
 	printf("       --list (-l short option)\n");
 	printf("             List currently configured devices and all discovered sensors.\n");
 	printf("\n");
@@ -403,8 +414,15 @@ int send_raw_command( char *command ) {
 int main(int argc, char **argv)
 {
 	int optch, longindex;
+#ifndef _WINDOWS
+	static char optstring[] = "s:ln:f:d:b:v:e:r:hi";
+#else
 	static char optstring[] = "ln:f:d:b:v:e:r:hi";
+#endif
 	static struct option long_opts[] = {
+#ifndef _WINDOWS
+		{ "socket", 1, 0, 's'},
+#endif
 		{ "list", 0, 0, 'l' },
 		{ "list-sensors", 0, 0, LIST_KV_SENSORS },
 		{ "list-devices", 0, 0, LIST_KV_DEVICES },
@@ -430,6 +448,11 @@ int main(int argc, char **argv)
 	while ( (optch = getopt_long(argc,argv,optstring,long_opts,&longindex)) != -1 ){
 		int success = 0;
 		switch (optch) {
+#ifndef _WINDOWS
+			case 's':
+				tdInitWithSocketSpec(&optarg[0], NULL);
+				break;
+#endif
 			case 'b' :
 				success = bell_device( &optarg[0] );
 				break;

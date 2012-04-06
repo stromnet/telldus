@@ -23,11 +23,15 @@
 #include <string>
 #include <stdarg.h>
 
-#ifndef _WINDOWS
 // Default socket endpoints
+#ifdef _WINDOWS
+// Actually pipe names
+#define DEFAULT_CLIENT_ENDPOINT "TelldusClient"
+#define DEFAULT_EVENT_ENDPOINT "TelldusEvents"
+#else
+// Default to unix socket
 #define DEFAULT_CLIENT_ENDPOINT "/tmp/TelldusClient"
 #define DEFAULT_EVENT_ENDPOINT "/tmp/TelldusEvents"
-
 #endif
 
 

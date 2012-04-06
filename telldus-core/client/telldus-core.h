@@ -39,6 +39,9 @@ typedef void (WINAPI *TDControllerEvent)(int controllerId, int changeEvent, int 
 extern "C" {
 #endif
 	TELLSTICK_API void WINAPI tdInit(void);
+#ifndef _WINDOWS
+	TELLSTICK_API void WINAPI tdInitWithSocketSpec(char *clientSocket, char *eventSocket) ;
+#endif
 	TELLSTICK_API int WINAPI tdRegisterDeviceEvent( TDDeviceEvent eventFunction, void *context );
 	TELLSTICK_API int WINAPI tdRegisterDeviceChangeEvent( TDDeviceChangeEvent eventFunction, void *context);
 	TELLSTICK_API int WINAPI tdRegisterRawDeviceEvent( TDRawDeviceEvent eventFunction, void *context );

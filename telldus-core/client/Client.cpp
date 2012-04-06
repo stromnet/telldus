@@ -17,11 +17,16 @@ public:
 	TelldusCore::Mutex mutex;
 	CallbackMainDispatcher callbackMainDispatcher;
 
+	std::wstring eventEndpoint, clientEndpoint;
 };
 
 Client *Client::instance = 0;
 
-Client::Client()
+/**
+ * Initialize a new client instance.
+ * If event endpoint is blank, no event loop is started!
+ */
+Client::Client(std::wstring client, std::wstring event)
 	: Thread()
 {
 	d = new PrivateData;
@@ -29,7 +34,11 @@ Client::Client()
 	d->sensorCached = false;
 	d->controllerCached = false;
 	d->callbackMainDispatcher.start();
-	start();
+	d->clientEndpoint = client;
+	d->eventEndpoint = event;
+
+	if(d->eventEndpoint.size() > 0)
+		start();
 }
 
 Client::~Client(void) {
@@ -48,9 +57,23 @@ void Client::close() {
 	}
 }
 
+/**
+ * Get current instance, if not initialized yet, create one with
+ * default endpoints.
+ */
 Client *Client::getInstance() {
+	return getInstance(TelldusCore::charToWstring(DEFAULT_CLIENT_ENDPOINT),
+			TelldusCore::charToWstring(DEFAULT_EVENT_ENDPOINT));
+}
+
+/**
+ * Get current instance, if not initialized yet, create one
+ * with the specified endpoints.
+ * Use getInstance() for initializing with default endpoints.
+ */
+Client *Client::getInstance(std::wstring client, std::wstring event) {
 	if (Client::instance == 0) {
-		Client::instance = new Client();
+		Client::instance = new Client(client, event);
 	}
 	return Client::instance;
 }
@@ -78,12 +101,12 @@ int Client::registerEvent( CallbackStruct::CallbackType type, void *eventFunctio
 
 void Client::run(){
 	//listen here
-	d->eventSocket.connect(L"TelldusEvents");
+	d->eventSocket.connect(d->eventEndpoint);
 
 	while(d->running){
 
 		if(!d->eventSocket.isConnected()){
-			d->eventSocket.connect(L"TelldusEvents");	//try to reconnect to service
+			d->eventSocket.connect(d->eventEndpoint);	//try to reconnect to service
 			if(!d->eventSocket.isConnected()){
 				//reconnect didn't succeed, wait a while and try again
 				msleep(2000);
@@ -153,7 +176,7 @@ std::wstring Client::sendToService(const Message &msg) {
 			return msg;
 		}
 		Socket s;
-		s.connect(L"TelldusClient");
+		s.connect(d->clientEndpoint);
 		if (!s.isConnected()) { //Connection failed
 			msleep(500);
 			continue; //retry

@@ -97,14 +97,51 @@ using namespace TelldusCore;
  */
 
 /**
- * This function initiates the library. Call this function before any other
- * call to a function in telldus-core.
+ * This function initiates the library with alternative socket endpoints.
+ * Call this function (or tdInit) before any other call to a function in telldus-core.
+ *
+ * If you want to use the default sockets, use tdInit instead.
+ *
+ * If clientSocket is NULL, we use the default socket endpoint.
+ *
+ * If eventSocket is NULL, we will however not use the default socket.
+ * Instead we simply avoid to init the event sub-system. In such case,
+ * any call to the tdRegisterXXX family is invalid and will never trigger
+ * any callbacks.
+ * This is usefull if the client application have no need for callbacks (ie tdtool).
+ * 
+ * Note that this function is only exported on UNIX platforms for now, there
+ * is no windows code for TCP sockets...
+ *
+ * Added in version 2.0.X
+ **/
+void WINAPI tdInitWithSocketSpec(char *clientSocket, char *eventSocket) {
+	std::wstring client;
+	if(clientSocket != NULL)
+		client = TelldusCore::charToWstring(clientSocket);
+
+	std::wstring event;
+	if(eventSocket != NULL)
+		event = TelldusCore::charToWstring(eventSocket);
+
+	Client::getInstance(client, event); //Create the manager-object
+}
+
+/**
+ * This function initiates the library with the default sockets.
+ * Call this function (or tdInitWithSocketSpec) before any other call
+ * to a function in telldus-core.
+ *
+ * If you want to use alternative sockets, make sure to use tdInitWithSocketSpec
+ * instead.
  *
  * Added in version 2.0.0.
  **/
 void WINAPI tdInit(void) {
 	Client::getInstance(); //Create the manager-object
 }
+
+
 
 /**
  * Added in version 2.0.0.
@@ -189,7 +226,7 @@ void WINAPI tdReleaseString(char *string) {
 int WINAPI tdTurnOn(int intDeviceId){
 	Message msg(L"tdTurnOn");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -203,7 +240,7 @@ int WINAPI tdTurnOn(int intDeviceId){
 int WINAPI tdTurnOff(int intDeviceId){
 	Message msg(L"tdTurnOff");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -217,7 +254,7 @@ int WINAPI tdTurnOff(int intDeviceId){
 int WINAPI tdBell(int intDeviceId){
 	Message msg(L"tdBell");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -233,7 +270,7 @@ int WINAPI tdDim(int intDeviceId, unsigned char level){
 	Message msg(L"tdDim");
 	msg.addArgument(intDeviceId);
 	msg.addArgument(level);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -247,7 +284,7 @@ int WINAPI tdDim(int intDeviceId, unsigned char level){
 int WINAPI tdExecute(int intDeviceId){
 	Message msg(L"tdExecute");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -261,7 +298,7 @@ int WINAPI tdExecute(int intDeviceId){
 int WINAPI tdUp(int intDeviceId){
 	Message msg(L"tdUp");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -275,7 +312,7 @@ int WINAPI tdUp(int intDeviceId){
 int WINAPI tdDown(int intDeviceId){
 	Message msg(L"tdDown");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -289,7 +326,7 @@ int WINAPI tdDown(int intDeviceId){
 int WINAPI tdStop(int intDeviceId){
 	Message msg(L"tdStop");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -304,7 +341,7 @@ int WINAPI tdStop(int intDeviceId){
 int WINAPI tdLearn(int intDeviceId) {
 	Message msg(L"tdLearn");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -319,7 +356,7 @@ int WINAPI tdLastSentCommand(int intDeviceId, int methodsSupported ) {
 	Message msg(L"tdLastSentCommand");
 	msg.addArgument(intDeviceId);
 	msg.addArgument(methodsSupported);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -332,7 +369,7 @@ int WINAPI tdLastSentCommand(int intDeviceId, int methodsSupported ) {
 char * WINAPI tdLastSentValue( int intDeviceId ) {
 	Message msg(L"tdLastSentValue");
 	msg.addArgument(intDeviceId);
-	std::wstring strReturn = Client::getWStringFromService(msg);
+	std::wstring strReturn = Client::getInstance()->getWStringFromService(msg);
 	return wrapStdWstring(strReturn);
 }
 
@@ -343,7 +380,7 @@ char * WINAPI tdLastSentValue( int intDeviceId ) {
  * Added in version 2.0.0.
  **/
 int WINAPI tdGetNumberOfDevices(void){
-	return Client::getIntegerFromService(Message(L"tdGetNumberOfDevices"));
+	return Client::getInstance()->getIntegerFromService(Message(L"tdGetNumberOfDevices"));
 }
 
 /**
@@ -364,7 +401,7 @@ int WINAPI tdGetNumberOfDevices(void){
 int WINAPI tdGetDeviceId(int intDeviceIndex){
 	Message msg(L"tdGetDeviceId");
 	msg.addArgument(intDeviceIndex);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -376,7 +413,7 @@ int WINAPI tdGetDeviceId(int intDeviceIndex){
 int WINAPI tdGetDeviceType(int intDeviceId) {
 	Message msg(L"tdGetDeviceType");
 	msg.addArgument(intDeviceId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -389,7 +426,7 @@ int WINAPI tdGetDeviceType(int intDeviceId) {
 char * WINAPI tdGetName(int intDeviceId){
 	Message msg(L"tdGetName");
 	msg.addArgument(intDeviceId);
-	std::wstring strReturn =  Client::getWStringFromService(msg);
+	std::wstring strReturn =  Client::getInstance()->getWStringFromService(msg);
 	return wrapStdWstring(strReturn);
 }
 
@@ -406,7 +443,7 @@ bool WINAPI tdSetName(int intDeviceId, const char* strNewName){
 	Message msg(L"tdSetName");
 	msg.addArgument(intDeviceId);
 	msg.addArgument(strNewName);
-	return Client::getBoolFromService(msg);
+	return Client::getInstance()->getBoolFromService(msg);
 }
 
 /**
@@ -418,7 +455,7 @@ bool WINAPI tdSetName(int intDeviceId, const char* strNewName){
 char* WINAPI tdGetProtocol(int intDeviceId){
 	Message msg(L"tdGetProtocol");
 	msg.addArgument(intDeviceId);
-	std::wstring strReturn =  Client::getWStringFromService(msg);
+	std::wstring strReturn =  Client::getInstance()->getWStringFromService(msg);
 	return wrapStdWstring(strReturn);
 }
 
@@ -437,7 +474,7 @@ bool WINAPI tdSetProtocol(int intDeviceId, const char* strProtocol){
 	Message msg(L"tdSetProtocol");
 	msg.addArgument(intDeviceId);
 	msg.addArgument(strProtocol);
-	return Client::getBoolFromService(msg);
+	return Client::getInstance()->getBoolFromService(msg);
 }
 
 /**
@@ -449,7 +486,7 @@ bool WINAPI tdSetProtocol(int intDeviceId, const char* strProtocol){
 char* WINAPI tdGetModel(int intDeviceId){
 	Message msg(L"tdGetModel");
 	msg.addArgument(intDeviceId);
-	std::wstring strReturn = Client::getWStringFromService(msg);
+	std::wstring strReturn = Client::getInstance()->getWStringFromService(msg);
 	return wrapStdWstring(strReturn);
 }
 
@@ -466,7 +503,7 @@ bool WINAPI tdSetModel(int intDeviceId, const char *strModel){
 	Message msg(L"tdSetModel");
 	msg.addArgument(intDeviceId);
 	msg.addArgument(strModel);
-	return Client::getBoolFromService(msg);
+	return Client::getInstance()->getBoolFromService(msg);
 }
 
 /**
@@ -484,7 +521,7 @@ bool WINAPI tdSetDeviceParameter(int intDeviceId, const char *strName, const cha
 	msg.addArgument(intDeviceId);
 	msg.addArgument(strName);
 	msg.addArgument(strValue);
-	return Client::getBoolFromService(msg);
+	return Client::getInstance()->getBoolFromService(msg);
 }
 
 /**
@@ -500,7 +537,7 @@ char * WINAPI tdGetDeviceParameter(int intDeviceId, const char *strName, const c
 	msg.addArgument(intDeviceId);
 	msg.addArgument(strName);
 	msg.addArgument(defaultValue);
-	std::wstring strReturn = Client::getWStringFromService(msg);
+	std::wstring strReturn = Client::getInstance()->getWStringFromService(msg);
 	return wrapStdWstring(strReturn);
 }
 
@@ -514,7 +551,7 @@ char * WINAPI tdGetDeviceParameter(int intDeviceId, const char *strName, const c
  **/
 int WINAPI tdAddDevice(){
 	Message msg(L"tdAddDevice");
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -526,7 +563,7 @@ int WINAPI tdAddDevice(){
 bool WINAPI tdRemoveDevice(int intDeviceId){
 	Message msg(L"tdRemoveDevice");
 	msg.addArgument(intDeviceId);
-	return Client::getBoolFromService(msg);
+	return Client::getInstance()->getBoolFromService(msg);
 }
 
 /**
@@ -558,7 +595,7 @@ int WINAPI tdMethods(int id, int methodsSupported){
 	Message msg(L"tdMethods");
 	msg.addArgument(id);
 	msg.addArgument(methodsSupported);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -624,7 +661,7 @@ int WINAPI tdSendRawCommand(const char *command, int reserved) {
 	Message msg(L"tdSendRawCommand");
 	msg.addArgument(wcommand);
 	msg.addArgument(reserved);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -635,7 +672,7 @@ void WINAPI tdConnectTellStickController(int vid, int pid, const char *serial) {
 	msg.addArgument(vid);
 	msg.addArgument(pid);
 	msg.addArgument(serial);
-	Client::getWStringFromService(msg);
+	Client::getInstance()->getWStringFromService(msg);
 }
 
 /**
@@ -646,7 +683,7 @@ void WINAPI tdDisconnectTellStickController(int vid, int pid, const char *serial
 	msg.addArgument(vid);
 	msg.addArgument(pid);
 	msg.addArgument(serial);
-	Client::getWStringFromService(msg);
+	Client::getInstance()->getWStringFromService(msg);
 }
 
 /**
@@ -689,7 +726,7 @@ int WINAPI tdSensorValue(const char *protocol, const char *model, int id, int da
 	msg.addArgument(model);
 	msg.addArgument(id);
 	msg.addArgument(dataType);
-	std::wstring retval = Client::getWStringFromService(msg);
+	std::wstring retval = Client::getInstance()->getWStringFromService(msg);
 	if (retval.length() == 0) {
 		return TELLSTICK_ERROR_METHOD_NOT_SUPPORTED;
 	}
@@ -738,7 +775,7 @@ int WINAPI tdControllerValue(int controllerId, const char *name, char *value, in
 	Message msg(L"tdControllerValue");
 	msg.addArgument(controllerId);
 	msg.addArgument(name);
-	std::wstring retval = Client::getWStringFromService(msg);
+	std::wstring retval = Client::getInstance()->getWStringFromService(msg);
 	if (retval.length() == 0) {
 		return TELLSTICK_ERROR_METHOD_NOT_SUPPORTED;
 	}
@@ -763,7 +800,7 @@ int WINAPI tdSetControllerValue(int controllerId, const char *name, const char *
 	msg.addArgument(controllerId);
 	msg.addArgument(name);
 	msg.addArgument(value);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /**
@@ -781,7 +818,7 @@ int WINAPI tdSetControllerValue(int controllerId, const char *name, const char *
 int WINAPI tdRemoveController(int controllerId) {
 	Message msg(L"tdRemoveController");
 	msg.addArgument(controllerId);
-	return Client::getIntegerFromService(msg);
+	return Client::getInstance()->getIntegerFromService(msg);
 }
 
 /* @} */
