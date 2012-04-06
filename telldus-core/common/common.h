@@ -23,6 +23,14 @@
 #include <string>
 #include <stdarg.h>
 
+#ifndef _WINDOWS
+// Default socket endpoints
+#define DEFAULT_CLIENT_ENDPOINT "/tmp/TelldusClient"
+#define DEFAULT_EVENT_ENDPOINT "/tmp/TelldusEvents"
+
+#endif
+
+
 inline void msleep( const int msec) {
 #ifdef _WINDOWS
 	Sleep(msec);
