@@ -11,6 +11,7 @@
 //
 #include "Settings.h"
 #include "Strings.h"
+#include "common.h"
 #include <stdlib.h>
 #include <string.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -29,6 +30,14 @@ public:
 	CFStringRef app_ID;
 	CFStringRef userName;
 	CFStringRef hostName;
+};
+
+
+// Defaults for getSetting()
+static const char* defaults[] = {
+	"eventSocket", DEFAULT_EVENT_ENDPOINT,
+	"clientSocket", DEFAULT_CLIENT_ENDPOINT,
+	NULL
 };
 
 /*
@@ -50,11 +59,52 @@ Settings::~Settings(void)
 	delete d;
 }
 
+std::wstring getDefaultSetting(std::string key) {
+	int i = 0;
+	const char *p ;
+	while((p = defaults[i++]) != NULL) {
+		if(key.compare(p) == 0) {
+			return TelldusCore::charToWstring(defaults[i]);
+		}
+		i++;
+	}
+	return L"";
+}
+
 /*
 * Return a setting
 */
 std::wstring Settings::getSetting(const std::wstring &strName) const {
-	return L"";
+	std::string name(TelldusCore::wideToString(strName));
+	CFStringRef key = CFStringCreateWithCString( 0, name.c_str(), kCFStringEncodingUTF8 );
+
+	CFStringRef value;
+
+	value = (CFStringRef)CFPreferencesCopyValue(key, d->app_ID, d->userName, d->hostName);
+	if (!value) {
+		// Fallback for defaults
+		CFRelease(key);
+		return getDefaultSetting(name);
+	}
+
+	std::wstring retval;
+	char *cp = NULL;
+	CFIndex size = CFStringGetMaximumSizeForEncoding( CFStringGetLength( value ), kCFStringEncodingUTF8) + 1;
+	cp = (char *)malloc(size);
+	CFStringGetCString( value, cp, size, kCFStringEncodingUTF8 );
+	char *newcp = (char *)realloc( cp, strlen(cp) + 1);
+	if (newcp != NULL) {
+		cp = newcp;
+		retval = TelldusCore::charToWstring(cp);
+	} else {
+		//Should not happen
+		retval = L"";
+	}
+	free(cp);
+
+	CFRelease(value);
+	CFRelease(key);
+	return retval;
 }
 
 /*
