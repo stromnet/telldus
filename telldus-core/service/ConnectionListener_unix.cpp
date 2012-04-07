@@ -20,6 +20,7 @@ public:
 	TelldusCore::EventRef waitEvent;
 	std::string name;
 	bool running;
+	bool isTcp;
 };
 
 ConnectionListener::ConnectionListener(const std::wstring &name, TelldusCore::EventRef waitEvent)
@@ -36,7 +37,10 @@ ConnectionListener::ConnectionListener(const std::wstring &name, TelldusCore::Ev
 ConnectionListener::~ConnectionListener(void) {
 	d->running = false;
 	this->wait();
-	unlink(d->name.c_str());
+
+	if(!d->isTcp)
+		unlink(d->name.c_str());
+
 	delete d;
 }
 
@@ -49,10 +53,10 @@ void ConnectionListener::run(){
 	/* d->name is either a filesystem path, or a tcp socket.
 	 * If a TCP socket, it should have format tcp://<ip>:<port>
 	 */
-	int isTcp = 0;
+	d->isTcp = 0;
 
 	if(d->name.find("tcp://") == 0) {
-		isTcp = 1;
+		d->isTcp = 1;
 		// Extract IP + port from name
 		std::string sockspec(d->name, 6);
 		size_t colon = sockspec.find(':');
@@ -109,7 +113,7 @@ void ConnectionListener::run(){
 
 	listen(serverSocket, 5);
 
-	if(!isTcp) {
+	if(!d->isTcp) {
 		//Change permissions to allow everyone
 		chmod(d->name.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
 	}
