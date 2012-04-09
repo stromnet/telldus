@@ -199,9 +199,10 @@ void ControllerManager::loadStoredControllers() {
 		int id = d->settings.getNodeId(Settings::Controller, i);
 		d->controllers[id].controller = NULL;
 		d->controllers[id].name = d->settings.getName(Settings::Controller, id);
-		d->controllers[id].type = d->settings.getControllerType(id);
+		const int type = d->settings.getControllerType(id);
+		d->controllers[id].type = type;
 		d->controllers[id].serial = d->settings.getControllerSerial(id);
-		signalControllerEvent(id, TELLSTICK_DEVICE_ADDED, 0, L"");
+		signalControllerEvent(id, TELLSTICK_DEVICE_ADDED, type, L"");
 	}
 }
 
@@ -277,6 +278,10 @@ std::wstring ControllerManager::getControllerValue(int id, const std::wstring &n
 	}
 	if (name == L"serial") {
 		return it->second.serial;
+	} else if (name == L"name") {
+		return it->second.name;
+	} else if (name == L"available") {
+		return it->second.controller ? L"1" : L"0";
 	} else if (name == L"firmware") {
 		if (!it->second.controller) {
 			return L"-1";
