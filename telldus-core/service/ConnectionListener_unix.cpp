@@ -21,6 +21,7 @@ public:
 	std::string name;
 	bool running;
 	bool isTcp;
+	SOCKET_T shutpipe[2];
 };
 
 ConnectionListener::ConnectionListener(const std::wstring &name, TelldusCore::EventRef waitEvent)
@@ -31,16 +32,23 @@ ConnectionListener::ConnectionListener(const std::wstring &name, TelldusCore::Ev
 	d->name = std::string(name.begin(), name.end());
 	d->running = true;
 
+	pipe(d->shutpipe);
+
 	this->start();
 }
 
 ConnectionListener::~ConnectionListener(void) {
 	d->running = false;
+
+	write(d->shutpipe[1], "", 1);
+
 	this->wait();
 
 	if(!d->isTcp)
 		unlink(d->name.c_str());
 
+	close(d->shutpipe[0]);
+	close(d->shutpipe[1]);
 	delete d;
 }
 
@@ -121,16 +129,22 @@ void ConnectionListener::run(){
 	fd_set infds;
 	FD_ZERO(&infds);
 	FD_SET(serverSocket, &infds);
+	FD_SET(d->shutpipe[0], &infds);
 
 	while(d->running) {
 		tv.tv_sec = 5;
 
-		int response = select(serverSocket+1, &infds, NULL, NULL, &tv);
+		int response = select(std::max(serverSocket, d->shutpipe[0]) + 1, &infds, NULL, NULL, &tv);
 		if (response == 0) {
 			FD_SET(serverSocket, &infds);
+			FD_SET(d->shutpipe[0], &infds);
 			continue;
 		} else if (response < 0 ) {
 			continue;
+		}
+		if (FD_ISSET(d->shutpipe[0], &infds)) {
+			// Shutdown
+			break;
 		}
 		//Make sure it is a new connection
 		if (!FD_ISSET(serverSocket, &infds)) {
