@@ -128,16 +128,14 @@ void ConnectionListener::run(){
 
 	fd_set infds;
 	FD_ZERO(&infds);
-	FD_SET(serverSocket, &infds);
-	FD_SET(d->shutpipe[0], &infds);
 
 	while(d->running) {
 		tv.tv_sec = 5;
 
+		FD_SET(serverSocket, &infds);
+		FD_SET(d->shutpipe[0], &infds);
 		int response = select(std::max(serverSocket, d->shutpipe[0]) + 1, &infds, NULL, NULL, &tv);
 		if (response == 0) {
-			FD_SET(serverSocket, &infds);
-			FD_SET(d->shutpipe[0], &infds);
 			continue;
 		} else if (response < 0 ) {
 			continue;
